@@ -36,13 +36,18 @@ uint64_t compare_similarity_calc(compare_similarity * m,const char * data,uint64
     for(auto i = 0; i < m->trial;++i){
         do{
             at = m->w_rand() % data_bytes; 
-        }while((at+m->len >= data_bytes) || (at >=cmp_bytes));
-        auto beg = at-m->range; 
-        if(beg >=cmp_bytes)beg = cmp_bytes-m->range;
-        if(beg<0) beg=0;
+        }while((at+m->len >= data_bytes) + (at >=cmp_bytes));
+        auto beg = at-m->range;{
+            auto cond = bool(beg >=cmp_bytes);
+            auto beg_is_less_than_zero = bool(cmp_bytes>m->range); 
+            beg = beg_is_less_than_zero*(cond*(cmp_bytes-m->range)+!cond*beg);
+        }
         
-        auto end = beg+(m->range*2); 
-        if(end >= cmp_bytes) end=cmp_bytes;
+        auto end = beg+(m->range*2);{
+            auto cond = end >= cmp_bytes;
+            end = cond*cmp_bytes+end*!cond;
+        } 
+        
         for(auto j = beg; j < end;++j){
             if(0==memcmp(&data[at],&cmp[j],m->len)){
                 ++count;
